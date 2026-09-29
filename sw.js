@@ -1,11 +1,11 @@
 // Service Worker: App startet auch offline. Eigene Dateien: erst Netz (immer aktuell), sonst Cache.
 // Schriften & Supabase-Bibliothek vom CDN: aus dem Cache. Supabase-API selbst: nie cachen.
-const VERSION = 'ausgaben-v3';
+const VERSION = 'ausgaben-v4';
 const SHELL = [
   './', './index.html', './styles.css', './config.js', './manifest.webmanifest',
-  './js/app.js', './js/store.js', './js/sync.js', './js/ui.js', './js/donut.js',
-  './js/format.js', './js/categories.js', './js/haptics.js',
-  './icons/icon-192.png', './icons/apple-touch-icon.png',
+  './app.js', './store.js', './sync.js', './ui.js', './donut.js',
+  './format.js', './categories.js', './haptics.js',
+  './icon-192.png', './apple-touch-icon.png',
 ];
 
 self.addEventListener('install', e => {

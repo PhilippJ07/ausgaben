@@ -1,7 +1,7 @@
 // Synchronisierung mit Supabase (Mac <-> iPhone).
 // Prinzip: Jede Änderung landet sofort lokal und in einer Warteschlange ("pending").
 // Online wird die Schlange hochgeladen, danach der Serverstand gezogen. Echtzeit-Updates halten Geräte gleich.
-import { CONFIG } from '../config.js';
+import { CONFIG } from './config.js';
 import * as store from './store.js';
 
 const CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
