@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>ausgaben.</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Monatliche Ausgaben im Studium, schnell eingetragen.">
+  <meta name="theme-color" content="#fbfbfa">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ausgaben">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="logo">ausgaben<span>.</span></div>
+      <nav class="nav" aria-label="Bereiche">
+        <span class="nav-ind" aria-hidden="true"></span>
+        <button type="button" data-view="overview" class="active">Übersicht</button>
+        <button type="button" data-view="entries">Einträge</button>
+        <button type="button" data-view="budgets">Budgets</button>
+      </nav>
+      <div class="month">
+        <button type="button" class="m-prev icon-btn" aria-label="Vorheriger Monat"></button>
+        <span class="m-label-wrap"><span class="m-label" aria-live="polite"></span></span>
+        <button type="button" class="m-next icon-btn" aria-label="Nächster Monat"></button>
+        <button type="button" class="m-today" hidden>Heute</button>
+      </div>
+      <span id="sync-dot" role="status"></span>
+    </header>
+    <main id="view"></main>
+  </div>
+
+  <nav id="tabbar" aria-label="Bereiche">
+    <div class="tabs">
+      <span class="nav-ind" aria-hidden="true"></span>
+      <button type="button" data-view="overview" data-icon="overview" class="active"><span class="ti"></span><span>Übersicht</span></button>
+      <button type="button" data-view="entries" data-icon="list"><span class="ti"></span><span>Einträge</span></button>
+      <button type="button" data-view="budgets" data-icon="budgets"><span class="ti"></span><span>Budgets</span></button>
+    </div>
+    <button type="button" id="fab" class="press" aria-label="Neue Ausgabe"></button>
+  </nav>
+
+  <div id="layer"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <div id="login" hidden>
+    <div class="login-card">
+      <div class="logo big">ausgaben<span>.</span></div>
+      <div class="login-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
