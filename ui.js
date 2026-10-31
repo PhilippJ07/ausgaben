@@ -11,6 +11,8 @@ export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)'
 const svg = (d, s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 export const icons = {
   overview: svg('<circle cx="12" cy="12" r="8"/><path d="M12 4v8l5.5 5.5"/>'),
+  home: svg('<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-6h4v6"/>'),
+  stats: svg('<path d="M6 20v-7M12 20V5M18 20v-10"/>'),
   list: svg('<path d="M8 7h11M8 12h11M8 17h11"/><circle cx="4.5" cy="7" r=".6" fill="currentColor"/><circle cx="4.5" cy="12" r=".6" fill="currentColor"/><circle cx="4.5" cy="17" r=".6" fill="currentColor"/>'),
   budgets: svg('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>', 18),

@@ -87,8 +87,23 @@ export function restoreExpense(snapshot) {
 }
 
 // ---------- Budgets ----------
+const BUDGET_HISTORY = '_monthly';
+
+/** Monatsbudget, das in diesem Monat galt. */
+export function budgetForMonth(m) {
+  const hist = state.settings.budgets?.[BUDGET_HISTORY];
+  if (!hist) return state.settings.monthlyBudget;
+  const key = Object.keys(hist).sort().filter(k => k <= m).pop();
+  return key ? hist[key] : state.settings.monthlyBudget;
+}
+
 export function setMonthlyBudget(n) {
-  state.settings = { ...state.settings, monthlyBudget: n, updatedAt: now() };
+  // Verlauf merken, damit vergangene Monate ihr damaliges Budget behalten (liegt im budgets-JSON, kein neues DB-Feld)
+  const budgets = state.settings.budgets;
+  const hist = { ...(budgets[BUDGET_HISTORY] || {}) };
+  if (!Object.keys(hist).length) hist['2000-01'] = state.settings.monthlyBudget;
+  hist[monthOf(todayYmd())] = n;
+  state.settings = { ...state.settings, monthlyBudget: n, budgets: { ...budgets, [BUDGET_HISTORY]: hist }, updatedAt: now() };
   onChange('settings', state.settings);
   emit('settings');
 }
@@ -190,6 +205,26 @@ export function monthTotals(m) {
   }
   for (const k in byCat) byCat[k] = round2(byCat[k]);
   return { total: round2(total), byCat };
+}
+
+/** Die Bilanz zählt ab diesem Monat. */
+export const STATS_START = '2026-10';
+
+/** Ein Monat pro Zeile. Abgeschlossene Monate mit Einträgen und Budget zählen zur Summe, der laufende noch nicht. */
+export function monthlyResults() {
+  const cur = monthOf(todayYmd());
+  const rows = [];
+  let sum = 0;
+  for (let m = STATS_START; m <= cur; m = addMonths(m, 1)) {
+    const live = m === cur;
+    const { total } = monthTotals(m);
+    if (!live && total <= 0) continue;
+    const budget = budgetForMonth(m);
+    const result = budget ? round2(budget - total) : null;
+    if (!live && result != null) sum = round2(sum + result);
+    rows.push({ m, total, budget, result, live, sum });
+  }
+  return rows;
 }
 
 export const budgetFor = cat => state.settings.budgets[cat] ?? null;

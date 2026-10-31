@@ -44,8 +44,8 @@ function setupChrome() {
     if (topPanel() || e.metaKey || e.ctrlKey || e.altKey) return;
     const typing = e.target.closest('input,textarea,[contenteditable]');
     if (typing) return;
-    if (e.key === 'ArrowLeft') { e.preventDefault(); shiftMonth(-1); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); shiftMonth(1); }
+    if (e.key === 'ArrowLeft' && currentView !== 'stats') { e.preventDefault(); shiftMonth(-1); }
+    else if (e.key === 'ArrowRight' && currentView !== 'stats') { e.preventDefault(); shiftMonth(1); }
     else if (e.key === 'n' || e.key === 'N') {
       e.preventDefault();
       if (isMobile()) openEntry();
@@ -53,10 +53,36 @@ function setupChrome() {
     }
   });
 
+  enableMonthSwipe();
   sync.onStatus(renderSyncDot);
   onLayoutChange(() => { closeAllPanels(); mountView(); });
   addEventListener('resize', positionIndicators);
   document.fonts?.ready.then(positionIndicators);
+}
+
+// iPhone: auf Home und Einträge per Wischen den Monat wechseln (die Pfeile bleiben)
+function enableMonthSwipe() {
+  const host = $('#view');
+  let start = null;
+  host.addEventListener('touchstart', e => {
+    const blocked = !['overview', 'entries'].includes(currentView) || !isMobile() || e.touches.length > 1
+      || e.target.closest('.entry,.pills-row,input');
+    start = blocked ? null : { x: e.touches[0].clientX, y: e.touches[0].clientY, t: performance.now() };
+  }, { passive: true });
+  host.addEventListener('touchend', e => {
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x, dy = t.clientY - start.y, dt = performance.now() - start.t;
+    start = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8 || dt > 700) return;
+    const dir = dx < 0 ? 1 : -1;
+    tick();
+    shiftMonth(dir);
+    view?.el.animate(
+      [{ opacity: 0.35, transform: `translateX(${dir * 26}px)` }, { opacity: 1, transform: 'none' }],
+      { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' },
+    );
+  }, { passive: true });
 }
 
 function shiftMonth(dir) {
@@ -83,7 +109,8 @@ function go(name) {
 function mountView() {
   view?.destroy?.();
   const host = $('#view');
-  view = ({ overview: Overview, entries: Entries, budgets: Budgets })[currentView]();
+  document.body.classList.toggle('view-stats', currentView === 'stats');
+  view = ({ overview: Overview, entries: Entries, budgets: Budgets, stats: Stats })[currentView]();
   host.replaceChildren(view.el);
   view.update('mount');
   $$('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
@@ -178,7 +205,7 @@ const clearJustAdded = () => { if (justAdded) setTimeout(() => { justAdded = nul
 
 function computeMonth(m) {
   const { total, byCat } = store.monthTotals(m);
-  const budget = store.state.settings.monthlyBudget || 0;
+  const budget = store.budgetForMonth(m) || 0;
   const prevM = addMonths(m, -1);
   const prevTotal = store.monthTotals(prevM).total;
   const today = todayYmd();
@@ -455,6 +482,108 @@ function Entries() {
       : `<div class="empty big">Keine Einträge im ${monthLabel(m)}.</div>`;
     bindEntries(g);
     clearJustAdded();
+  }
+  return { el, update };
+}
+
+// =====================================================================
+// Statistik
+// =====================================================================
+
+const signed = n => (n > 0 ? '+' : '') + eur(n);
+
+function Stats() {
+  const el = document.createElement('section');
+  el.className = 'view stats';
+  el.innerHTML = `
+    <div class="st-chart-h"><div class="st-t"></div><div class="st-v"></div></div>
+    <div class="st-chart"></div>
+    <div class="st-grid">
+      <div class="st-bilanz">
+        <div class="st-lbl">Bilanz</div>
+        <div class="st-val"></div>
+        <div class="st-cap"></div>
+        <div class="st-avg" hidden><span>Ø Ausgaben pro Monat</span><span class="mono"></span></div>
+      </div>
+      <div class="st-list"></div>
+    </div>`;
+  const chart = $('.st-chart', el);
+  let selected = null, rows = [], shown = false;
+
+  function pick(m) {
+    const r = rows.find(x => x.m === m);
+    chart.classList.toggle('has', !!r);
+    $$('.st-col', chart).forEach(c => c.classList.toggle('sel', c.dataset.m === m));
+    const v = $('.st-v', el);
+    $('.st-t', el).textContent = r ? monthLabel(r.m) + (r.live ? ' · läuft noch' : '') : 'Ergebnis pro Monat';
+    if (!r || r.result == null) { v.textContent = r ? 'Kein Budget festgelegt' : ''; v.className = 'st-v'; return; }
+    v.textContent = r.live ? (r.result >= 0 ? `noch ${eur(r.result)}` : `${eur(-r.result)} drüber`) : signed(r.result);
+    v.className = `st-v ${r.live ? '' : r.result >= 0 ? 'st-pos' : 'st-neg'}`;
+  }
+
+  function update() {
+    rows = store.monthlyResults();
+    const mobile = isMobile();
+    const done = rows.filter(r => !r.live && r.result != null);
+    const sum = done.length ? done[done.length - 1].sum : 0;
+    const closed = rows.filter(r => !r.live);
+
+    // Säulen: letzte 6 Monate (iPhone) bzw. 12 (Mac). Die Nulllinie entspricht dem Budget.
+    const visible = rows.slice(mobile ? -6 : -12);
+    const H = mobile ? 210 : 270, labelH = 26, pad = 20;
+    const maxDone = Math.max(...visible.filter(r => !r.live).map(r => Math.abs(r.result ?? 0)), 1);
+    const value = r => (r.live ? Math.max(0, Math.min(r.result ?? 0, maxDone * 0.6)) : r.result ?? 0);
+    const vals = visible.map(value);
+    const maxP = Math.max(...vals, 1), maxN = Math.max(...vals.map(v => -v), 0);
+    const scale = (H - labelH - pad * (maxN > 0 ? 2 : 1)) / (maxP + maxN);
+    const zero = pad + maxP * scale;
+    chart.style.height = `${H}px`;
+    chart.innerHTML = `<div class="st-zero" style="top:${zero}px"></div>` + visible.map((r, i) => {
+      const v = vals[i], h = Math.max(3, Math.abs(v) * scale), up = v >= 0;
+      return `<button type="button" class="st-col ${r.m === selected ? 'sel' : ''}" data-m="${r.m}" style="--i:${i}" aria-label="${monthLabel(r.m)}">
+        <span class="st-bar ${up ? 'up' : 'down'} ${r.live ? 'live' : ''}" style="top:${up ? zero - h : zero}px;height:${h}px"></span>
+        <span class="st-num" style="top:${up ? zero - h - 17 : zero + h + 3}px">${r.live || r.result == null ? '' : `${r.result > 0 ? '+' : ''}${eur0(r.result).replace(' €', '')}`}</span>
+        <span class="st-mon">${monthShort(r.m)}</span>
+      </button>`;
+    }).join('');
+    $$('.st-col', chart).forEach(c => {
+      const m = c.dataset.m;
+      c.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') pick(m); });
+      c.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') pick(selected); });
+      c.addEventListener('click', () => { selected = selected === m ? null : m; tick(); pick(selected); });
+    });
+    pick(selected);
+
+    // Säulen wachsen nur beim Öffnen hoch
+    if (shown) chart.classList.add('grown');
+    else {
+      shown = true;
+      void chart.offsetWidth;
+      setTimeout(() => chart.classList.add('grown'), 30);
+    }
+
+    // Bilanz
+    const val = $('.st-val', el);
+    tween(val, sum, signed, 1000);
+    val.classList.toggle('st-pos', sum > 0);
+    val.classList.toggle('st-neg', sum < 0);
+    const under = done.filter(r => r.result >= 0).length, over = done.length - under;
+    const word = n => (n === 1 ? 'Monat' : 'Monate');
+    $('.st-cap', el).textContent = !done.length ? 'Zählt, sobald der erste Monat abgeschlossen ist.'
+      : `seit ${monthName(done[0].m)} · ${[under && `${under} ${word(under)} unter Budget`, over && `${over} ${word(over)} darüber`].filter(Boolean).join(', ')}`;
+    const avg = $('.st-avg', el);
+    avg.hidden = !closed.length;
+    if (closed.length) $('.mono', avg).textContent = eur(closed.reduce((a, r) => a + r.total, 0) / closed.length);
+
+    // Monatsliste, neuester zuerst
+    $('.st-list', el).innerHTML = [...rows].reverse().map(r => `
+      <div class="st-row ${r.live ? 'live' : ''}">
+        <div><div class="st-m">${monthLabel(r.m)}${r.live ? '<span class="tag">läuft noch</span>' : ''}</div>
+          <div class="st-s">${eur(r.total)}${r.budget ? ` von ${eur(r.budget)}` : ''}</div></div>
+        <div class="st-r">${r.result == null ? '<div class="st-s">Kein Budget</div>'
+          : r.live ? `<div class="st-e muted">${r.result >= 0 ? `noch ${eur(r.result)}` : `${eur(-r.result)} drüber`}</div><div class="st-s">zählt ab Monatsende</div>`
+          : `<div class="st-e ${r.result >= 0 ? 'st-pos' : 'st-neg'}">${signed(r.result)}</div><div class="st-s">Summe ${signed(r.sum)}</div>`}</div>
+      </div>`).join('');
   }
   return { el, update };
 }
