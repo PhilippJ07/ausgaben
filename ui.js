@@ -28,22 +28,22 @@ export const icons = {
 };
 
 // ---------- Zahlen weich hochzählen ----------
-const easeOut = t => 1 - Math.pow(1 - t, 4);
-export function tween(el, to, fmt, dur = 700) {
-  const from = el._v ?? 0;
-  el._v = to;
+const easeOut = t => 1 - Math.pow(1 - t, 3); // entspricht --ease-ring in styles.css
+export function tween(el, to, fmt, dur = 1500) {
+  const from = el._cur ?? 0;
   cancelAnimationFrame(el._raf);
-  if (reducedMotion() || from === to) { el.textContent = fmt(to); return; }
+  clearTimeout(el._end);
+  if (reducedMotion() || from === to) { el._cur = to; el.textContent = fmt(to); return; }
   const t0 = performance.now();
   const step = t => {
     const p = Math.min(1, (t - t0) / dur);
-    el.textContent = fmt(from + (to - from) * easeOut(p));
+    el._cur = from + (to - from) * easeOut(p);
+    el.textContent = fmt(el._cur);
     if (p < 1) el._raf = requestAnimationFrame(step);
   };
   el._raf = requestAnimationFrame(step);
   // Falls der Browser Frames pausiert (Hintergrund), steht am Ende trotzdem der richtige Wert da
-  clearTimeout(el._end);
-  el._end = setTimeout(() => { cancelAnimationFrame(el._raf); el.textContent = fmt(to); }, dur + 80);
+  el._end = setTimeout(() => { cancelAnimationFrame(el._raf); el._cur = to; el.textContent = fmt(to); }, dur + 80);
 }
 
 // ---------- Panels: Sheet (mobil), Dialog & Drawer (Mac) ----------

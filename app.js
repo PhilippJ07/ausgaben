@@ -34,8 +34,8 @@ function setupChrome() {
   $('#fab').addEventListener('click', () => { tick(); openEntry(); });
   $('.m-prev').innerHTML = icons.chevL;
   $('.m-next').innerHTML = icons.chevR;
-  $('.m-prev').addEventListener('click', () => shiftMonth(-1));
-  $('.m-next').addEventListener('click', () => shiftMonth(1));
+  $('.m-prev').addEventListener('click', () => { tick(); shiftMonth(-1); });
+  $('.m-next').addEventListener('click', () => { tick(); shiftMonth(1); });
   $$('#tabbar [data-view]').forEach(b => { b.querySelector('.ti').innerHTML = icons[b.dataset.icon]; });
   renderMonthLabel(0);
   pressable(document.body);
@@ -76,8 +76,7 @@ function enableMonthSwipe() {
     start = null;
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8 || dt > 700) return;
     const dir = dx < 0 ? 1 : -1;
-    tick();
-    shiftMonth(dir);
+    shiftMonth(dir); // bewusst ohne Haptik, damit es ruhig wirkt
     view?.el.animate(
       [{ opacity: 0.35, transform: `translateX(${dir * 26}px)` }, { opacity: 1, transform: 'none' }],
       { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' },
@@ -359,7 +358,7 @@ function Overview() {
     tween($('#k-spent', el), d.total, eur);
     $('#k-spent-cap', el).textContent = d.budget ? `${pct((d.total / d.budget) * 100)} von ${eur(d.budget)} Budget` : 'Kein Monatsbudget festgelegt';
     const left = $('#k-left', el);
-    if (!d.budget) { left._v = 0; left.textContent = '—'; left.classList.remove('neg'); }
+    if (!d.budget) { left._cur = 0; left.textContent = '—'; left.classList.remove('neg'); }
     else { tween(left, d.left, eur); left.classList.toggle('neg', d.left < 0); }
     $('#k-left-cap', el).textContent = !d.budget ? 'Monatsbudget unter „Budgets“ festlegen'
       : d.left < 0 ? 'über dem Monatsbudget'
@@ -374,7 +373,7 @@ function Overview() {
       const diff = Math.abs(d.total - d.prevTotal);
       $('#k-cmp-cap', el).textContent = mob ? `${eur(diff)} ${d.total <= d.prevTotal ? 'weniger' : 'mehr'}` : `${eur(diff)} ${d.total <= d.prevTotal ? 'weniger' : 'mehr'} als ${eur(d.prevTotal)}`;
     } else {
-      cmp._v = 0; cmp.textContent = '—'; cmp.className = 'val';
+      cmp._cur = 0; cmp.textContent = '—'; cmp.className = 'val';
       $('#k-cmp-cap', el).textContent = `Keine Ausgaben im ${monthName(d.prevM)}`;
     }
 

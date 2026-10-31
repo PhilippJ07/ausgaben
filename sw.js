@@ -1,6 +1,6 @@
 // Service Worker: App startet auch offline. Eigene Dateien: erst Netz (immer aktuell), sonst Cache.
 // Schriften & Supabase-Bibliothek vom CDN: aus dem Cache. Supabase-API selbst: nie cachen.
-const VERSION = 'ausgaben-v5';
+const VERSION = 'ausgaben-v6';
 const SHELL = [
   './', './index.html', './styles.css', './config.js', './manifest.webmanifest',
   './app.js', './store.js', './sync.js', './ui.js', './donut.js',

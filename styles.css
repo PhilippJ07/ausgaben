@@ -25,6 +25,7 @@
   --warn-text: oklch(0.55 0.1 65);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-ring: cubic-bezier(0.33, 1, 0.68, 1);
   --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
@@ -254,12 +255,12 @@ h1, h2, p { margin: 0; }
 .d-seg {
   fill: none;
   transition:
-    stroke-dasharray 1s var(--ease-out), stroke-dashoffset 1s var(--ease-out),
+    stroke-dasharray 1.5s var(--ease-ring), stroke-dashoffset 1.5s var(--ease-ring),
     stroke-width .5s var(--ease-spring), opacity .45s var(--ease-out), filter .45s;
 }
 .d-seg.on { stroke-width: calc(var(--stroke) * 1px + 5px); filter: drop-shadow(0 2px 6px rgb(0 0 0 / .1)); }
 .donut.has-active .d-seg:not(.on) { opacity: .22; }
-.d-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; transition: stroke-dasharray 1s var(--ease-out), stroke-dashoffset 1s var(--ease-out); }
+.d-hit { fill: none; stroke: transparent; pointer-events: stroke; cursor: pointer; transition: stroke-dasharray 1.5s var(--ease-ring), stroke-dashoffset 1.5s var(--ease-ring); }
 .d-center { position: absolute; inset: 22px; border-radius: 50%; display: grid; place-items: center; }
 .donut.has-active .d-center { cursor: pointer; }
 .d-layer {
@@ -287,7 +288,7 @@ h1, h2, p { margin: 0; }
 .cat-row .dot { display: none; }
 .cat-row .name { font-size: 14px; transition: transform .35s var(--ease-out), color .3s; }
 .cat-row .bar { height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; transition: height .35s var(--ease-out); }
-.cat-row .bar i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 2px; transition: width 1s var(--ease-out), background-color .4s; }
+.cat-row .bar i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 2px; transition: width 1.5s var(--ease-ring), background-color .4s; }
 .cat-row .amt { font-size: 13px; text-align: right; white-space: nowrap; transition: color .3s; }
 .cat-row .bud { color: var(--faint); }
 .cat-row.warn .bar i { background: var(--warn); }
